@@ -1,7 +1,10 @@
 // Package kvstore implements a key value storage with configurable backends
 //
-// These backends are implemented as drivers. For an example see the memory
-// package with a in-memory implementation
+// These backends are implemented as drivers. Available backends:
+//
+//  * Memory: http://godoc.org/github.com/igorsobreira/kvstore/memory
+//  * MySQL: http://godoc.org/github.com/igorsobreira/kvstore-mysql
+//
 package kvstore
 
 import (
