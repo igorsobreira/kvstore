@@ -48,11 +48,11 @@ func (d *DriverMemory) Get(key string) (value []byte, err error) {
 
 	if !ok {
 		return value, kvstore.ErrNotFound
-	} else {
-		return value, nil
 	}
+	return value, nil
 }
 
+// Delete will remove key. Do nothing if key not found.
 func (d *DriverMemory) Delete(key string) error {
 	d.mux.Lock()
 	defer d.mux.Unlock()

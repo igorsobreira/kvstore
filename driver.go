@@ -1,7 +1,6 @@
 package kvstore
 
-// Interface every driver must implemented to be used
-// by KVStore
+// Driver interface used by KVStore
 type Driver interface {
 	// Open is called by New. Drivers can use this to setup
 	// any necessary connection

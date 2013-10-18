@@ -12,6 +12,7 @@ import (
 	"fmt"
 )
 
+// Error returned when a key doesn't exist
 var ErrNotFound = errors.New("kvstore: key not found")
 
 // KVStore offers an API to save arbitrary values associated with
