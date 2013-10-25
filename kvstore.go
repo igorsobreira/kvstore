@@ -4,6 +4,7 @@
 //
 //  * Memory: http://godoc.org/github.com/igorsobreira/kvstore/memory
 //  * MySQL: http://godoc.org/github.com/igorsobreira/kvstore-mysql
+//  * Redis: http://godoc.org/github.com/igorsobreira/kvstore-redis
 //
 package kvstore
 
@@ -44,16 +45,19 @@ func New(driverName, driverInfo string) (*KVStore, error) {
 	return &KVStore{d}, nil
 }
 
-// Set will set the value associated with key
+// Set will set the value associated with key.
 //
 // Will override any existing value of key. Errors are driver dependent.
+//
+// The max key and value size are driver dependent. But kvstore requires that
+// all drivers support at least: 256 bytes for key and 1Mb for values
 func (s *KVStore) Set(key string, value []byte) (err error) {
 	return s.driver.Set(key, value)
 }
 
-// Get will return the value associated with key
+// Get will return the value associated with key.
 //
-// Will return ErrNotFound if key doesn't exist
+// Will return ErrNotFound if key doesn't exist.
 func (s *KVStore) Get(key string) (value []byte, err error) {
 	return s.driver.Get(key)
 }
