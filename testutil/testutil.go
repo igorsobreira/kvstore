@@ -19,27 +19,33 @@ const megabyte = 1024 * 1024
 // between tests.
 type Teardown func()
 
+// TestFunc is the type of a single test
+type TestFunc func(*testing.T, *kvstore.KVStore)
+
+// TestFuncs is a list of all tests executed by TestRequiredAPI
+var TestFuncs = []TestFunc{
+	TestSetGetDelete,
+	TestSetOverride,
+	TestGetNotFound,
+	TestDeleteNotFound,
+}
+
 // TestRequiredAPI will run all Test* functions defined in this package
 //
 // name and info are the parameters to kvstore.New()
+//
+// Each test will receive a newly created KVStore. And teardown will be
+// called after each test.
 func TestRequiredAPI(t *testing.T, teardown Teardown, name, info string) {
 
-	kv, err := kvstore.New(name, info)
-	if err != nil {
-		t.Fatal(err)
+	for _, tf := range TestFuncs {
+		kv, err := kvstore.New(name, info)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tf(t, kv)
+		teardown()
 	}
-
-	TestSetGetDelete(t, kv)
-	teardown()
-
-	TestSetOverride(t, kv)
-	teardown()
-
-	TestGetNotFound(t, kv)
-	teardown()
-
-	TestDeleteNotFound(t, kv)
-	teardown()
 }
 
 // TestSetGetDelete are the basic tests that sets a value, gets it then delete it
