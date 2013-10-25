@@ -2,10 +2,12 @@ package kvstore
 
 // Driver interface used by KVStore
 type Driver interface {
-	// Open is called by New. Drivers can use this to setup
-	// any necessary connection
-	Open(info string) error
+	// Open is called by New. It should return a Conn ready to be used.
+	Open(info string) (Conn, error)
+}
 
+// Conn is a connection ready to be used by kvstore to get/set/delete keys
+type Conn interface {
 	// Set should set the value associated with key. Overriding
 	// existing value.
 	Set(key string, value []byte) error
@@ -16,6 +18,10 @@ type Driver interface {
 
 	// Delete should remove key. Should do nothing if key not found.
 	Delete(key string) error
+
+	// Close will close the connection. This connection should not
+	// be used anymore.
+	Close() error
 }
 
 var drivers = make(map[string]Driver)

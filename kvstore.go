@@ -22,7 +22,7 @@ var ErrNotFound = errors.New("kvstore: key not found")
 // The actual persistence mechanism is implemented by drivers
 // (implementation of Driver interface)
 type KVStore struct {
-	driver Driver
+	conn Conn
 }
 
 // New creates a new KVStore using driver specified by driverName.
@@ -37,12 +37,12 @@ func New(driverName, driverInfo string) (*KVStore, error) {
 		return nil, fmt.Errorf("kvstore: unknown driver %q (forgotten import?)", driverName)
 	}
 
-	err := d.Open(driverInfo)
+	conn, err := d.Open(driverInfo)
 	if err != nil {
 		return nil, err
 	}
 
-	return &KVStore{d}, nil
+	return &KVStore{conn}, nil
 }
 
 // Set will set the value associated with key.
@@ -52,17 +52,23 @@ func New(driverName, driverInfo string) (*KVStore, error) {
 // The max key and value size are driver dependent. But kvstore requires that
 // all drivers support at least: 256 bytes for key and 1Mb for values
 func (s *KVStore) Set(key string, value []byte) (err error) {
-	return s.driver.Set(key, value)
+	return s.conn.Set(key, value)
 }
 
 // Get will return the value associated with key.
 //
 // Will return ErrNotFound if key doesn't exist.
 func (s *KVStore) Get(key string) (value []byte, err error) {
-	return s.driver.Get(key)
+	return s.conn.Get(key)
 }
 
 // Delete will delete the key. If key is not found it's a no-op.
 func (s *KVStore) Delete(key string) error {
-	return s.driver.Delete(key)
+	return s.conn.Delete(key)
+}
+
+// Close will close the driver connection. Most drivers require this
+// method to be called.
+func (s *KVStore) Close() error {
+	return s.conn.Close()
 }

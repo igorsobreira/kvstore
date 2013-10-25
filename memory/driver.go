@@ -8,43 +8,46 @@ import (
 )
 
 func init() {
-	kvstore.Register("memory", &DriverMemory{})
+	kvstore.Register("memory", &Driver{})
 }
 
-// DriverMemory is a in-memory implementation of Driver
+// Driver is a in-memory implementation of Driver
+type Driver struct{}
+
+// Conn implements kvstore.Conn interface. It's not a real
+// connection to anything, just a map.
 //
-// It's safe for concurrent access
-type DriverMemory struct {
+// It's safe to be used by multiples goroutines.
+type Conn struct {
 	data map[string][]byte
 	mux  sync.RWMutex
 }
 
-// Open initializes the memory structure
+// Open returns a new Conn.
 //
 // Doesn't require any info, it's ignored
-func (d *DriverMemory) Open(info string) error {
-	d.data = make(map[string][]byte)
-	return nil
+func (d *Driver) Open(info string) (kvstore.Conn, error) {
+	return &Conn{data: make(map[string][]byte)}, nil
 }
 
 // Set sets the value associated with the key. Override existing
 // value.
-func (d *DriverMemory) Set(key string, value []byte) error {
-	d.mux.Lock()
-	defer d.mux.Unlock()
+func (c *Conn) Set(key string, value []byte) error {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 
-	d.data[key] = value
+	c.data[key] = value
 	return nil
 }
 
 // Get returns the value associated with key.
 // Returns ErrNotFound if key doesn't exist
-func (d *DriverMemory) Get(key string) (value []byte, err error) {
-	d.mux.RLock()
-	defer d.mux.RUnlock()
+func (c *Conn) Get(key string) (value []byte, err error) {
+	c.mux.RLock()
+	defer c.mux.RUnlock()
 
 	var ok bool
-	value, ok = d.data[key]
+	value, ok = c.data[key]
 
 	if !ok {
 		return value, kvstore.ErrNotFound
@@ -53,10 +56,15 @@ func (d *DriverMemory) Get(key string) (value []byte, err error) {
 }
 
 // Delete will remove key. Do nothing if key not found.
-func (d *DriverMemory) Delete(key string) error {
-	d.mux.Lock()
-	defer d.mux.Unlock()
+func (c *Conn) Delete(key string) error {
+	c.mux.Lock()
+	defer c.mux.Unlock()
 
-	delete(d.data, key)
+	delete(c.data, key)
+	return nil
+}
+
+// Close is a no-op. Just to implement kvstore.Conn interface.
+func (c *Conn) Close() error {
 	return nil
 }

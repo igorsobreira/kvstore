@@ -38,14 +38,14 @@ func TestNewOpenFails(t *testing.T) {
 	}
 }
 
-// Set will call driver's Set
+// Set will call Conn.Set()
 func TestSet(t *testing.T) {
 	defer teardown()
 
-	driver := &MockDriver{}
-	driver.SetErr = errors.New("failed to set")
+	conn := &MockConn{}
+	conn.SetErr = errors.New("failed to set")
 
-	Register("mock", driver)
+	Register("mock", &MockDriver{OpenConn: conn})
 
 	store, err := New("mock", "")
 	if err != nil {
@@ -59,23 +59,23 @@ func TestSet(t *testing.T) {
 	if err.Error() != "failed to set" {
 		t.Error("returned another error", err)
 	}
-	if driver.SetKey != "foo" {
+	if conn.SetKey != "foo" {
 		t.Error("didn't call driver.Set() with key")
 	}
-	if !byteSliceEqual(driver.SetValue, []byte("bar")) {
+	if !byteSliceEqual(conn.SetValue, []byte("bar")) {
 		t.Error("didn't call drivers.Set with value")
 	}
 }
 
-// Get will call driver's Get
+// Get will call Conn.Get()
 func TestGet(t *testing.T) {
 	defer teardown()
 
-	driver := &MockDriver{}
-	driver.GetErr = errors.New("failed to get")
-	driver.GetValue = []byte("bar")
+	conn := &MockConn{}
+	conn.GetErr = errors.New("failed to get")
+	conn.GetValue = []byte("bar")
 
-	Register("mock", driver)
+	Register("mock", &MockDriver{OpenConn: conn})
 
 	store, err := New("mock", "")
 	if err != nil {
@@ -92,19 +92,19 @@ func TestGet(t *testing.T) {
 	if !byteSliceEqual(val, []byte("bar")) {
 		t.Error("didn't return driver.Get() value")
 	}
-	if driver.GetKey != "foo" {
+	if conn.GetKey != "foo" {
 		t.Error("didn't call driver.Get() with key")
 	}
 }
 
-// Delete will call driver's Delete
+// Delete will call Conn.Delete()
 func TestDelete(t *testing.T) {
 	defer teardown()
 
-	driver := &MockDriver{}
-	driver.DeleteErr = errors.New("failed to delete")
+	conn := &MockConn{}
+	conn.DeleteErr = errors.New("failed to delete")
 
-	Register("mock", driver)
+	Register("mock", &MockDriver{OpenConn: conn})
 
 	store, err := New("mock", "")
 	if err != nil {
@@ -118,7 +118,7 @@ func TestDelete(t *testing.T) {
 	if err.Error() != "failed to delete" {
 		t.Error("returned another error", err)
 	}
-	if driver.DeleteKey != "foo" {
+	if conn.DeleteKey != "foo" {
 		t.Error("didn't call driver.Delete() with key")
 	}
 }
@@ -163,11 +163,13 @@ func TestRegisterNil(t *testing.T) {
 // helpers
 
 type MockDriver struct {
-
 	// mocks to Open method
 	OpenErr  error
+	OpenConn Conn
 	OpenInfo string
+}
 
+type MockConn struct {
 	// mocks to Set method
 	SetErr   error
 	SetKey   string
@@ -181,27 +183,34 @@ type MockDriver struct {
 	// mocks to Delete method
 	DeleteErr error
 	DeleteKey string
+
+	// mocks to Close method
+	CloseErr error
 }
 
-func (d *MockDriver) Open(info string) error {
+func (d *MockDriver) Open(info string) (Conn, error) {
 	d.OpenInfo = info
-	return d.OpenErr
+	return d.OpenConn, d.OpenErr
 }
 
-func (d *MockDriver) Set(key string, value []byte) error {
-	d.SetKey = key
-	d.SetValue = value
-	return d.SetErr
+func (c *MockConn) Set(key string, value []byte) error {
+	c.SetKey = key
+	c.SetValue = value
+	return c.SetErr
 }
 
-func (d *MockDriver) Get(key string) ([]byte, error) {
-	d.GetKey = key
-	return d.GetValue, d.GetErr
+func (c *MockConn) Get(key string) ([]byte, error) {
+	c.GetKey = key
+	return c.GetValue, c.GetErr
 }
 
-func (d *MockDriver) Delete(key string) error {
-	d.DeleteKey = key
-	return d.DeleteErr
+func (c *MockConn) Delete(key string) error {
+	c.DeleteKey = key
+	return c.DeleteErr
+}
+
+func (c *MockConn) Close() error {
+	return c.CloseErr
 }
 
 func teardown() {
